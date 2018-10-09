@@ -1,15 +1,17 @@
-package com.hhg.jerry;
+package com.hhg.jerry.pubsub.topic;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public class TopicSend {
     private static final String EXCHANGE_NAME = "topic_logs";
-
+    static Logger logger = LoggerFactory.getLogger(TopicSend.class);
     public static void main(String[] args) throws IOException, TimeoutException {
         Connection connection = null;
         Channel channel = null;
@@ -32,10 +34,10 @@ public class TopicSend {
                     "lazy.orange.male.rabbit"
             };
             //发送消息
-            for(String severity :routingKeys){
-                String message = "From "+severity+" routingKey' s message!";
-                channel.basicPublish(EXCHANGE_NAME, severity, null, message.getBytes());
-                System.out.println("TopicSend Sent '" + severity + "':'" + message + "'");
+            for(String topic :routingKeys){
+                String message = "My topic is " + topic;
+                channel.basicPublish(EXCHANGE_NAME, topic, null, message.getBytes());
+                logger.info("Sent:'" + message);
             }
         }catch (Exception e){
             e.printStackTrace();

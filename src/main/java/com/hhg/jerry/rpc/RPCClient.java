@@ -1,10 +1,12 @@
-package com.hhg.jerry;
+package com.hhg.jerry.rpc;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Envelope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -13,7 +15,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 public class RPCClient {
-
+    static Logger logger = LoggerFactory.getLogger(RPCClient.class);
     private Connection connection;
     private Channel channel;
     private String requestQueueName = "rpc_queue";
@@ -45,6 +47,8 @@ public class RPCClient {
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
                 if (properties.getCorrelationId().equals(corrId)) {
                     response.offer(new String(body, "UTF-8"));
+                }else{
+                    logger.info("not my msg...");
                 }
             }
         });
@@ -64,11 +68,10 @@ public class RPCClient {
         try {
             fibonacciRpc = new RPCClient();
 
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < 5; i++) {
                 String i_str = Integer.toString(i);
-                System.out.println(" [x] Requesting fib(" + i_str + ")");
                 response = fibonacciRpc.call(i_str);
-                System.out.println(" [.] Got '" + response + "'");
+                logger.info("response is :" + response);
             }
         }
         catch  (Exception e) {

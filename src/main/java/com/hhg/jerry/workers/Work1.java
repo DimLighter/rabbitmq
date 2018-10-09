@@ -1,6 +1,8 @@
-package com.hhg.jerry;
+package com.hhg.jerry.workers;
 
 import com.rabbitmq.client.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -8,9 +10,9 @@ import java.util.concurrent.TimeoutException;
 /**
  * Created by lining on 2018/10/8.
  */
-public class Work2 {
-    private static final String TASK_QUEUE_NAME = "task_queue";
-
+public class Work1 {
+    private static final String TASK_QUEUE_NAME = "tasks";
+    static Logger logger = LoggerFactory.getLogger(Work1.class);
     public static void main(String[] args) throws IOException, TimeoutException {
         final ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -18,9 +20,9 @@ public class Work2 {
         final Channel channel = connection.createChannel();
 
         channel.queueDeclare(TASK_QUEUE_NAME, false, false, false, null);
-        System.out.println("Worker1  Waiting for messages");
+        logger.info("Worker1 is waiting for task");
 
-        //每次从队列获取的数量
+        //每次从队列获取的数量 donot send me msg util i'm ack
         channel.basicQos(1);
 
         final Consumer consumer = new DefaultConsumer(channel) {
@@ -30,26 +32,17 @@ public class Work2 {
                                        AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
                 String message = new String(body, "UTF-8");
-                System.out.println("Worker2  Received '" + message + "'");
+                logger.info("Worker1 is handle task:'" + message + "'");
                 try {
-                    doWork(message);
+                    Thread.sleep(500); // 暂停1秒钟
                 }catch (Exception e){
                     channel.abort();
                 }finally {
-                    System.out.println("Worker2 Done");
                     channel.basicAck(envelope.getDeliveryTag(),false);
+                    logger.info("Worker1 finish task:'" + message + "'");
                 }
             }
         };
-        boolean autoAck=false;
-        //消息消费完成确认
-        channel.basicConsume(TASK_QUEUE_NAME, autoAck, consumer);
-    }
-    private static void doWork(String task) {
-        try {
-            Thread.sleep(1000); // 暂停1秒钟
-        } catch (InterruptedException _ignored) {
-            Thread.currentThread().interrupt();
-        }
+        channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
     }
 }
